@@ -4943,6 +4943,7 @@ public class IndexWriter
             StringHelper.randomId(),
             Collections.emptyMap(),
             config.getIndexSort());
+    si.putAttribute("estimatedMergeSize", String.valueOf(merge.estimatedMergeBytes));
     Map<String, String> details = new HashMap<>();
     details.put("mergeMaxNumSegments", "" + merge.maxNumSegments);
     details.put("mergeFactor", Integer.toString(merge.segments.size()));
