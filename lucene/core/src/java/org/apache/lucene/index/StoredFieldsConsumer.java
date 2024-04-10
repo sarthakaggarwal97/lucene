@@ -25,6 +25,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.PrintStreamInfoStream;
 
 class StoredFieldsConsumer {
   final Codec codec;
@@ -35,6 +37,7 @@ class StoredFieldsConsumer {
   // it's cleaner than checking if the writer is null all over the place
   Accountable accountable = Accountable.NULL_ACCOUNTABLE;
   private int lastDoc;
+  InfoStream infoStream =  new PrintStreamInfoStream(System.out);
 
   StoredFieldsConsumer(Codec codec, Directory directory, SegmentInfo info) {
     this.codec = codec;
@@ -101,6 +104,7 @@ class StoredFieldsConsumer {
 
   void flush(SegmentWriteState state, Sorter.DocMap sortMap) throws IOException {
     try {
+      infoStream.message("StoredFieldsConsumer", "writes happening again");
       writer.finish(state.segmentInfo.maxDoc());
     } finally {
       IOUtils.close(writer);

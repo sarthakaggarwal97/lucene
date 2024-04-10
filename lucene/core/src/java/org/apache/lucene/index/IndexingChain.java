@@ -112,7 +112,7 @@ final class IndexingChain implements Accountable {
 
     if (segmentInfo.getIndexSort() == null) {
       storedFieldsConsumer =
-          new StoredFieldsConsumer(indexWriterConfig.getCodec(), directory, segmentInfo);
+          new HybridCompressionStoredFieldsConsumer(indexWriterConfig.getCodec(), directory, segmentInfo);
       termVectorsWriter =
           new TermVectorsConsumer(
               intBlockAllocator,
