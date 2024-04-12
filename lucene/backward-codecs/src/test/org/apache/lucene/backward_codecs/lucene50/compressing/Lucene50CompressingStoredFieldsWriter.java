@@ -159,7 +159,7 @@ public final class Lucene50CompressingStoredFieldsWriter extends StoredFieldsWri
   public void startDocument() throws IOException {}
 
   @Override
-  public void finishDocument() throws IOException {
+  public void finishDocument(boolean isStoredFieldsInitiated) throws IOException {
     if (numBufferedDocs == this.numStoredFields.length) {
       final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
       this.numStoredFields = ArrayUtil.growExact(this.numStoredFields, newLength);

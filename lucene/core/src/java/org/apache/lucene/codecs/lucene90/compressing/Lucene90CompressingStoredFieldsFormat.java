@@ -29,6 +29,8 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
+import static org.apache.lucene.index.HybridCompressionStoredFieldsUtils.NO_COMPRESSION;
+
 /**
  * A {@link StoredFieldsFormat} that compresses documents in chunks in order to improve the
  * compression ratio.
@@ -137,6 +139,7 @@ public class Lucene90CompressingStoredFieldsFormat extends StoredFieldsFormat {
   @Override
   public StoredFieldsWriter fieldsWriter(Directory directory, SegmentInfo si, IOContext context)
       throws IOException {
+
     return new Lucene90CompressingStoredFieldsWriter(
         directory,
         si,

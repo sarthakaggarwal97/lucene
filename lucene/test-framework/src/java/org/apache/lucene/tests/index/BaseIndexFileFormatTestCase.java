@@ -594,7 +594,7 @@ abstract class BaseIndexFileFormatTestCase extends LuceneTestCase {
         default:
           throw new AssertionError();
       }
-      consumer.finishDocument();
+      consumer.finishDocument(false);
       consumer.finish(1);
       IOUtils.close(consumer);
       IOUtils.close(consumer);

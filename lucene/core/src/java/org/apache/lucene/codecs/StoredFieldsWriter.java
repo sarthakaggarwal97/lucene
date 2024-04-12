@@ -58,7 +58,7 @@ public abstract class StoredFieldsWriter implements Closeable, Accountable {
   public abstract void startDocument() throws IOException;
 
   /** Called when a document and all its fields have been added. */
-  public void finishDocument() throws IOException {}
+  public void finishDocument(boolean isStoredFieldsInitiated) throws IOException {}
 
   /** Writes a stored int value. */
   public abstract void writeField(FieldInfo info, int value) throws IOException;
@@ -142,7 +142,7 @@ public abstract class StoredFieldsWriter implements Closeable, Accountable {
       assert sub.mappedDocID == docCount;
       startDocument();
       sub.reader.document(sub.docID, sub.visitor);
-      finishDocument();
+      finishDocument(false);
       docCount++;
     }
     finish(docCount);

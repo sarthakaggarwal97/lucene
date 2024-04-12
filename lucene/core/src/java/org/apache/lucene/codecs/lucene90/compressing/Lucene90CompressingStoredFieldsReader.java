@@ -37,6 +37,7 @@ import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingS
 import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.TYPE_MASK;
 import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_CURRENT;
 import static org.apache.lucene.codecs.lucene90.compressing.Lucene90CompressingStoredFieldsWriter.VERSION_START;
+import static org.apache.lucene.index.HybridCompressionStoredFieldsUtils.NO_COMPRESSION;
 
 import java.io.EOFException;
 import java.io.IOException;
@@ -117,7 +118,6 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
       String formatName,
       CompressionMode compressionMode)
       throws IOException {
-    this.compressionMode = compressionMode;
     final String segment = si.name;
     boolean success = false;
     fieldInfos = fn;
@@ -135,6 +135,13 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
           == fieldsStream.getFilePointer();
 
+      int isNoCompression = this.fieldsStream.readVInt();
+      if (isNoCompression == 0) {
+        this.compressionMode = NO_COMPRESSION;
+      } else {
+        this.compressionMode = compressionMode;
+      }
+
       final String metaStreamFN =
           IndexFileNames.segmentFileName(segment, segmentSuffix, META_EXTENSION);
       metaIn = d.openChecksumInput(metaStreamFN, IOContext.READONCE);
@@ -148,7 +155,7 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
 
       chunkSize = metaIn.readVInt();
 
-      decompressor = compressionMode.newDecompressor();
+      decompressor = this.compressionMode.newDecompressor();
       this.merging = false;
       this.state = new BlockState();
 

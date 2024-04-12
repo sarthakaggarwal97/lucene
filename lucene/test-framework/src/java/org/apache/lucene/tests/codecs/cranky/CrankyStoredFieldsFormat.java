@@ -100,11 +100,11 @@ class CrankyStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void finishDocument() throws IOException {
+    public void finishDocument(boolean isStoredFieldsInitiated) throws IOException {
       if (random.nextInt(10000) == 0) {
         throw new IOException("Fake IOException from StoredFieldsWriter.finishDocument()");
       }
-      delegate.finishDocument();
+      delegate.finishDocument(isStoredFieldsInitiated);
     }
 
     @Override

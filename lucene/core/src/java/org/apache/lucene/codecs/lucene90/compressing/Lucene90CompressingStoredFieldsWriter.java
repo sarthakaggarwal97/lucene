@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.codecs.lucene90.compressing;
 
+import static org.apache.lucene.index.HybridCompressionStoredFieldsUtils.NO_COMPRESSION;
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 import java.io.IOException;
@@ -78,11 +79,12 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   static final int META_VERSION_START = 0;
 
   private final String segment;
+  private final SegmentInfo segmentInfo;
   private FieldsIndexWriter indexWriter;
   private IndexOutput metaStream, fieldsStream;
 
   private Compressor compressor;
-  private final CompressionMode compressionMode;
+  private CompressionMode compressionMode;
   private final int chunkSize;
   private final int maxDocsPerChunk;
 
@@ -95,6 +97,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   private long numChunks;
   private long numDirtyChunks; // number of incomplete compressed blocks written
   private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
+  private final long fieldStreamIndexHeaderLength; // cumulative number of missing docs in incomplete chunks
 
   /** Sole constructor. */
   Lucene90CompressingStoredFieldsWriter(
@@ -109,6 +112,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
       int blockShift)
       throws IOException {
     assert directory != null;
+    this.segmentInfo = si;
     this.segment = si.name;
     this.compressionMode = compressionMode;
     this.compressor = compressionMode.newCompressor();
@@ -137,6 +141,8 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
           fieldsStream, formatName, VERSION_CURRENT, si.getId(), segmentSuffix);
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
           == fieldsStream.getFilePointer();
+
+      this.fieldStreamIndexHeaderLength = fieldsStream.getFilePointer();
 
       indexWriter =
           new FieldsIndexWriter(
@@ -177,7 +183,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   public void startDocument() throws IOException {}
 
   @Override
-  public void finishDocument() throws IOException {
+  public void finishDocument(boolean isStoredFieldsInitiated) throws IOException {
     if (numBufferedDocs == this.numStoredFields.length) {
       final int newLength = ArrayUtil.oversize(numBufferedDocs + 1, 4);
       this.numStoredFields = ArrayUtil.growExact(this.numStoredFields, newLength);
@@ -188,7 +194,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
     endOffsets[numBufferedDocs] = Math.toIntExact(bufferedDocs.size());
     ++numBufferedDocs;
     if (triggerFlush()) {
-      flush(false);
+      flush(false, isStoredFieldsInitiated);
     }
   }
 
@@ -222,13 +228,22 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   }
 
   private boolean triggerFlush() {
-    return bufferedDocs.size() >= chunkSize
-        || // chunks of at least chunkSize bytes
-        numBufferedDocs >= maxDocsPerChunk;
+    return bufferedDocs.size() >= chunkSize;
+//        || // chunks of at least chunkSize bytes
+//        numBufferedDocs >= maxDocsPerChunk;
   }
 
-  private void flush(boolean force) throws IOException {
+  private void flush(boolean force, boolean isStoredFieldsInitiated) throws IOException {
     assert triggerFlush() != force;
+
+    if (isStoredFieldsInitiated && triggerFlush()) {
+      if (this.fieldStreamIndexHeaderLength == fieldsStream.getFilePointer()){
+        fieldsStream.writeVInt(isStoredFieldsInitiated ? 0 : 1);
+        compressionMode = NO_COMPRESSION;
+        compressor = NO_COMPRESSION.newCompressor();
+      }
+    }
+
     numChunks++;
     if (force) {
       numDirtyChunks++; // incomplete: we had to force this flush
@@ -459,7 +474,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   @Override
   public void finish(int numDocs) throws IOException {
     if (numBufferedDocs > 0) {
-      flush(true);
+      flush(true, false);
     } else {
       assert bufferedDocs.size() == 0;
     }
@@ -501,7 +516,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
     startDocument();
     bufferedDocs.copyBytes(doc.in, doc.length);
     numStoredFieldsInDoc = doc.numStoredFields;
-    finishDocument();
+    finishDocument(false);
   }
 
   private void copyChunks(
@@ -534,7 +549,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
         toDocID == sub.maxDoc ? reader.getMaxPointer() : index.getStartPointer(toDocID);
     if (fromPointer < toPointer) {
       if (numBufferedDocs > 0) {
-        flush(true);
+        flush(true, false);
       }
       final IndexInput rawDocs = reader.getFieldsStream();
       rawDocs.seek(fromPointer);
@@ -626,7 +641,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
         assert visitors[sub.readerIndex] != null;
         startDocument();
         reader.document(sub.docID, visitors[sub.readerIndex]);
-        finishDocument();
+        finishDocument(false);
         ++docCount;
         sub = docIDMerger.next();
       } else {

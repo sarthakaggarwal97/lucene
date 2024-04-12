@@ -278,7 +278,7 @@ final class IndexingChain implements Accountable {
 
     // it's possible all docs hit non-aborting exceptions...
     t0 = System.nanoTime();
-    storedFieldsConsumer.finish(maxDoc);
+    storedFieldsConsumer.finish(maxDoc, false);
     storedFieldsConsumer.flush(state, sortMap);
     if (infoStream.isEnabled("IW")) {
       infoStream.message(
@@ -507,9 +507,9 @@ final class IndexingChain implements Accountable {
   }
 
   /** Calls StoredFieldsWriter.startDocument, aborting the segment if it hits any exception. */
-  private void startStoredFields(int docID) throws IOException {
+  private void startStoredFields(int docID, boolean isStoredFieldsInitiated) throws IOException {
     try {
-      storedFieldsConsumer.startDocument(docID);
+      storedFieldsConsumer.startDocument(docID, isStoredFieldsInitiated);
     } catch (Throwable th) {
       onAbortingException(th);
       throw th;
@@ -517,9 +517,9 @@ final class IndexingChain implements Accountable {
   }
 
   /** Calls StoredFieldsWriter.finishDocument, aborting the segment if it hits any exception. */
-  private void finishStoredFields() throws IOException {
+  private void finishStoredFields(boolean isStoredFieldsInitiated) throws IOException {
     try {
-      storedFieldsConsumer.finishDocument();
+      storedFieldsConsumer.finishDocument(isStoredFieldsInitiated);
     } catch (Throwable th) {
       onAbortingException(th);
       throw th;
@@ -540,7 +540,8 @@ final class IndexingChain implements Accountable {
     // (i.e., we cannot have more than one TokenStream
     // running "at once"):
     termsHash.startDocument();
-    startStoredFields(docID);
+    boolean isStoredFieldsInitiated = true;
+    startStoredFields(docID, isStoredFieldsInitiated);
     try {
       // 1st pass over doc fields – verify that doc schema matches the index schema
       // build schema for each unique doc field
@@ -585,7 +586,7 @@ final class IndexingChain implements Accountable {
         for (int i = 0; i < indexedFieldCount; i++) {
           fields[i].finish(docID);
         }
-        finishStoredFields();
+        finishStoredFields(isStoredFieldsInitiated);
         // TODO: for broken docs, optimize termsHash.finishDocument
         try {
           termsHash.finishDocument(docID);

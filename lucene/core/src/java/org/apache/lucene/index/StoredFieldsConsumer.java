@@ -52,12 +52,12 @@ class StoredFieldsConsumer {
     }
   }
 
-  void startDocument(int docID) throws IOException {
+  void startDocument(int docID, boolean isStoredFieldsInitiated) throws IOException {
     assert lastDoc < docID;
     initStoredFieldsWriter();
     while (++lastDoc < docID) {
       writer.startDocument();
-      writer.finishDocument();
+      writer.finishDocument(isStoredFieldsInitiated);
     }
     writer.startDocument();
   }
@@ -87,14 +87,14 @@ class StoredFieldsConsumer {
     }
   }
 
-  void finishDocument() throws IOException {
-    writer.finishDocument();
+  void finishDocument(boolean isStoredFieldsInitiated) throws IOException {
+    writer.finishDocument(isStoredFieldsInitiated);
   }
 
-  void finish(int maxDoc) throws IOException {
+  void finish(int maxDoc, boolean isStoredFieldsInitiated) throws IOException {
     while (lastDoc < maxDoc - 1) {
-      startDocument(lastDoc);
-      finishDocument();
+      startDocument(lastDoc, isStoredFieldsInitiated);
+      finishDocument(isStoredFieldsInitiated);
       ++lastDoc;
     }
   }

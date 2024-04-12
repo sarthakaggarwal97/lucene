@@ -123,9 +123,9 @@ public class AssertingStoredFieldsFormat extends StoredFieldsFormat {
     }
 
     @Override
-    public void finishDocument() throws IOException {
+    public void finishDocument(boolean isStoredFieldsInitiated) throws IOException {
       assert docStatus == Status.STARTED;
-      in.finishDocument();
+      in.finishDocument(isStoredFieldsInitiated);
       docStatus = Status.FINISHED;
     }
 
