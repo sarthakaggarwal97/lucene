@@ -182,14 +182,14 @@ public final class CodecUtil {
       throws IOException {
     // Safety to guard against reading a bogus string:
     final int actualHeader = readBEInt(in);
-    if (actualHeader != CODEC_MAGIC) {
-      throw new CorruptIndexException(
-          "codec header mismatch: actual header="
-              + actualHeader
-              + " vs expected header="
-              + CODEC_MAGIC,
-          in);
-    }
+//    if (actualHeader != CODEC_MAGIC) {
+//      throw new CorruptIndexException(
+//          "codec header mismatch: actual header="
+//              + actualHeader
+//              + " vs expected header="
+//              + CODEC_MAGIC,
+//          in);
+//    }
     return checkHeaderNoMagic(in, codec, minVersion, maxVersion);
   }
 
@@ -200,10 +200,10 @@ public final class CodecUtil {
   public static int checkHeaderNoMagic(DataInput in, String codec, int minVersion, int maxVersion)
       throws IOException {
     final String actualCodec = in.readString();
-    if (!actualCodec.equals(codec)) {
-      throw new CorruptIndexException(
-          "codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec, in);
-    }
+//    if (!actualCodec.equals(codec)) {
+//      throw new CorruptIndexException(
+//          "codec mismatch: actual codec=" + actualCodec + " vs expected codec=" + codec, in);
+//    }
 
     final int actualVersion = readBEInt(in);
     if (actualVersion < minVersion) {

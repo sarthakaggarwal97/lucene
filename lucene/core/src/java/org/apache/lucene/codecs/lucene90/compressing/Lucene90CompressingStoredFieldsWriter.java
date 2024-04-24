@@ -98,6 +98,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   private long numDirtyChunks; // number of incomplete compressed blocks written
   private long numDirtyDocs; // cumulative number of missing docs in incomplete chunks
   private final long fieldStreamIndexHeaderLength; // cumulative number of missing docs in incomplete chunks
+  private final String formatName;
 
   /** Sole constructor. */
   Lucene90CompressingStoredFieldsWriter(
@@ -123,6 +124,7 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
     this.numStoredFields = new int[16];
     this.endOffsets = new int[16];
     this.numBufferedDocs = 0;
+    this.formatName =  formatName;
 
     boolean success = false;
     try {
@@ -236,11 +238,13 @@ public final class Lucene90CompressingStoredFieldsWriter extends StoredFieldsWri
   private void flush(boolean force, boolean isStoredFieldsInitiated) throws IOException {
     assert triggerFlush() != force;
 
-    if (isStoredFieldsInitiated && triggerFlush()) {
-      if (this.fieldStreamIndexHeaderLength == fieldsStream.getFilePointer()){
-        fieldsStream.writeVInt(isStoredFieldsInitiated ? 0 : 1);
+    if (this.fieldStreamIndexHeaderLength == fieldsStream.getFilePointer()) {
+      if (isStoredFieldsInitiated) {
+        fieldsStream.writeString("Lucene90StoredFieldsNoCompressData");
         compressionMode = NO_COMPRESSION;
         compressor = NO_COMPRESSION.newCompressor();
+      } else {
+        fieldsStream.writeString(formatName);
       }
     }
 

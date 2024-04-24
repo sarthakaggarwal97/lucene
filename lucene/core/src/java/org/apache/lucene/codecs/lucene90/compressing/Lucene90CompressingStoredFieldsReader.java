@@ -45,6 +45,8 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.StoredFieldsReader;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.codecs.compressing.Decompressor;
+import org.apache.lucene.codecs.lucene90.DeflateWithPresetDictCompressionMode;
+import org.apache.lucene.codecs.lucene90.LZ4WithPresetDictCompressionMode;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
@@ -87,6 +89,7 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
   private final long numDirtyChunks; // number of incomplete compressed blocks written
   private final long numDirtyDocs; // cumulative number of docs in incomplete chunks
   private boolean closed;
+  private final String formatName;
 
   // used by clone
   private Lucene90CompressingStoredFieldsReader(
@@ -106,6 +109,7 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
     this.merging = merging;
     this.state = new BlockState();
     this.closed = false;
+    this.formatName = reader.formatName;
   }
 
   /** Sole constructor. */
@@ -135,11 +139,13 @@ public final class Lucene90CompressingStoredFieldsReader extends StoredFieldsRea
       assert CodecUtil.indexHeaderLength(formatName, segmentSuffix)
           == fieldsStream.getFilePointer();
 
-      int isNoCompression = this.fieldsStream.readVInt();
-      if (isNoCompression == 0) {
+      this.formatName = this.fieldsStream.readString();
+      if (this.formatName.equals("Lucene90StoredFieldsNoCompressData")) {
         this.compressionMode = NO_COMPRESSION;
+      } else if (this.formatName.equals("Lucene90StoredFieldsFastData")) {
+        this.compressionMode = new LZ4WithPresetDictCompressionMode();
       } else {
-        this.compressionMode = compressionMode;
+        this.compressionMode = NO_COMPRESSION;
       }
 
       final String metaStreamFN =

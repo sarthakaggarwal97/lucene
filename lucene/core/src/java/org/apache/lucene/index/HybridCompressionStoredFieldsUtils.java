@@ -28,8 +28,19 @@ import org.apache.lucene.util.BytesRef;
 
 import java.io.IOException;
 
+/**
+ * Hybrid Compression Utils
+ */
 public final class HybridCompressionStoredFieldsUtils {
 
+    /**
+     * Hybrid Compression Ctor
+     */
+    public HybridCompressionStoredFieldsUtils(){
+
+    }
+
+    /** No Compression Mode from here. */
     public static final CompressionMode NO_COMPRESSION =
             new CompressionMode() {
                 @Override
@@ -68,5 +79,4 @@ public final class HybridCompressionStoredFieldsUtils {
                     };
                 }
             };
-
 }
